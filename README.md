@@ -113,4 +113,4 @@ POST /predict/backtest  {"ticker": "^TWII", "start": "2023-01-01", "end": "2024-
 | CI/CD | None | GitHub Actions |
 | Deployment | None | Docker + docker-compose |
 
-*Originally a 6-person group project (2023). Rebuilt as a solo end-to-end pipeline.*
+*Originally a 4-person group project (2023). Rebuilt as a solo end-to-end pipeline.*
