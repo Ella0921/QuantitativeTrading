@@ -26,6 +26,7 @@ from src.features.indicators import to_macd_series
 
 # ── Neural network ──────────────────────────────────────────────────────────
 
+@tf.keras.saving.register_keras_serializable(package="quant")
 class DQNModel(tf.keras.Model):
     def __init__(self, state_size: int, action_size: int, **kwargs):
         super().__init__(**kwargs)
