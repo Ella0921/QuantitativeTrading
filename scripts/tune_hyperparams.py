@@ -64,7 +64,7 @@ def make_objective(df_train, df_test, initial_money: float):
                 initial_money=initial_money,
                 checkpoint=999,          # suppress per-epoch logging
             )
-        except Exception as e:
+        except Exception:
             raise optuna.TrialPruned()
 
         # Backtest
@@ -156,7 +156,7 @@ def main():
     print(f"\n{'─'*50}")
     print(f"Best trial #{best.number}")
     print(f"  Sharpe ratio : {best.value:.4f}")
-    print(f"  Params:")
+    print("  Params:")
     for k, v in best.params.items():
         print(f"    {k}: {v}")
 

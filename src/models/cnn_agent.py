@@ -15,7 +15,6 @@ Action space: 3 actions — Long (0), Neutral (1), Short (2)
 
 from __future__ import annotations
 
-import copy
 from pathlib import Path
 
 import numpy as np
@@ -311,11 +310,17 @@ class CNNAgent:
         return losses
 
     def save(self, path: str | Path) -> None:
+        path = str(path)
+        if not path.endswith(".keras"):
+            path += ".keras"
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.model.save(str(path))
+        self.model.save(path)
         print(f"CNN model saved → {path}")
 
     def load(self, path: str | Path) -> None:
-        self.model = tf.keras.models.load_model(str(path))
+        path = str(path)
+        if not path.endswith(".keras"):
+            path += ".keras"
+        self.model = tf.keras.models.load_model(path)
         self._update_target()
         print(f"CNN model loaded ← {path}")

@@ -19,7 +19,6 @@ from collections import deque
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 
 from src.features.indicators import to_macd_series
@@ -88,7 +87,7 @@ class DQNAgent:
         if d >= 0:
             block = series[d: t + 1]
         else:
-            block = [-d] * [series[0]] + series[: t + 1]
+            block = [series[0]] * (-d) + series[: t + 1]
         return np.array([[block[i + 1] - block[i] for i in range(window)]])
 
     # ── Action ───────────────────────────────────────────────────────────────
@@ -246,12 +245,18 @@ class DQNAgent:
     # ── Persistence ──────────────────────────────────────────────────────────
 
     def save(self, path: str | Path) -> None:
+        path = str(path)
+        if not path.endswith(".keras"):
+            path += ".keras"
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self.model.save(str(path))
+        self.model.save(path)
         print(f"Model saved → {path}")
 
     def load(self, path: str | Path) -> None:
-        self.model = tf.keras.models.load_model(str(path))
+        path = str(path)
+        if not path.endswith(".keras"):
+            path += ".keras"
+        self.model = tf.keras.models.load_model(path)
         print(f"Model loaded ← {path}")
 
     # ── Convenience constructors ──────────────────────────────────────────────

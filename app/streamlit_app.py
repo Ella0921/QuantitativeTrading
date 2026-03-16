@@ -15,12 +15,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from src.data.downloader import download, get_train_test_split
+from src.data.downloader import download
 from src.features.indicators import to_macd_series, add_all
 from src.models.dqn_agent import DQNAgent
 from src.models.cnn_agent import CNNAgent, prepare_inference_matrix

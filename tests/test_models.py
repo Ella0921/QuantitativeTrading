@@ -8,11 +8,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
-import pandas as pd
 import pytest
 import tempfile
 
-from src.models.dqn_agent import DQNAgent, DQNModel
+from src.models.dqn_agent import DQNAgent
 from src.models.cnn_agent import CNNAgent, build_cnn_model, encode_ohlcv_to_matrix
 
 
@@ -70,13 +69,13 @@ class TestDQNAgent:
 
     def test_save_and_load(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "dqn_test"
+            path = str(Path(tmpdir) / "dqn_test")
             agent = DQNAgent()
             original_weights = [w.numpy().copy() for w in agent.model.weights]
-            agent.save(str(path))
+            agent.save(path)
 
             agent2 = DQNAgent()
-            agent2.load(str(path))
+            agent2.load(path)
             loaded_weights = [w.numpy() for w in agent2.model.weights]
 
             for ow, lw in zip(original_weights, loaded_weights):
@@ -143,12 +142,12 @@ class TestCNNAgent:
 
     def test_save_and_load(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "cnn_test"
+            path = str(Path(tmpdir) / "cnn_test")
             agent = CNNAgent()
-            agent.save(str(path))
+            agent.save(path)
 
             agent2 = CNNAgent()
-            agent2.load(str(path))
+            agent2.load(path)
 
             matrix = np.random.randint(0, 2, (32, 32)).astype(np.float32)
             a1 = agent.predict(matrix)

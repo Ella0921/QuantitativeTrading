@@ -1,0 +1,32 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Data & model artifacts (track with git-lfs or exclude entirely)
+data/cache/
+models/*.keras
+models/*.h5
+mlruns/
+optuna_studies/
+results/
+
+# Environment
+.env
+*.env
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage.xml
+.coverage
+htmlcov/

@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import mlflow
 import mlflow.tensorflow
-import numpy as np
 import pandas as pd
 
 from src.data.downloader import download, get_train_test_split
@@ -121,7 +120,6 @@ def run_dqn(args, df_train: pd.DataFrame, df_test: pd.DataFrame):
         })
 
         # Log model with signature
-        import tensorflow as tf
         mlflow.tensorflow.log_model(agent.model, artifact_path="tf_model")
 
         print("\n" + result.summary())

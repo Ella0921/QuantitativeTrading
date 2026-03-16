@@ -10,8 +10,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import numpy as np
 import pandas as pd
 import pytest
-import tempfile
-from unittest.mock import patch, MagicMock
 
 from src.data.downloader import get_train_test_split
 from src.features.indicators import (

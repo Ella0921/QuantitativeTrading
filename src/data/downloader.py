@@ -6,7 +6,7 @@ Replaces the ad-hoc yf.download() calls scattered across the original codebase.
 import yfinance as yf
 import pandas as pd
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
