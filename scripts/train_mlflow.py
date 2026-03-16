@@ -170,8 +170,11 @@ def run_cnn(args, df_train: pd.DataFrame, df_test: pd.DataFrame):
 def main():
     args = parse_args()
 
-    # Setup MLflow
-    mlflow.set_tracking_uri(args.mlflow_uri)
+    # Setup MLflow — use SQLite backend to avoid FileStore deprecation warning
+    uri = args.mlflow_uri
+    if not uri.startswith(("sqlite://", "postgresql://", "mysql://", "http://", "https://")):
+        uri = f"sqlite:///{uri}.db"
+    mlflow.set_tracking_uri(uri)
     exp_name = args.experiment or f"quant_{args.model}_{args.ticker.replace('^','').replace('.','_')}"
     mlflow.set_experiment(exp_name)
 

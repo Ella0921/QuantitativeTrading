@@ -119,7 +119,10 @@ def main():
     print(f"Train: {len(df_train)} days | Test: {len(df_test)} days")
 
     # MLflow experiment
-    mlflow.set_tracking_uri(args.mlflow_uri)
+    uri = args.mlflow_uri
+    if not uri.startswith(("sqlite://", "postgresql://", "mysql://", "http://", "https://")):
+        uri = f"sqlite:///{uri}.db"
+    mlflow.set_tracking_uri(uri)
     exp_name = f"optuna_dqn_{args.ticker.replace('^','').replace('.','_')}"
     mlflow.set_experiment(exp_name)
 

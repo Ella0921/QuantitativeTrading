@@ -18,16 +18,22 @@ import random
 from collections import deque
 from pathlib import Path
 
-import keras
 import numpy as np
 import tensorflow as tf
 
 from src.features.indicators import to_macd_series
 
+# Register with whichever keras namespace is available
+try:
+    import keras as _keras
+    _register = _keras.saving.register_keras_serializable
+except Exception:
+    _register = tf.keras.utils.register_keras_serializable
+
 
 # ── Neural network ──────────────────────────────────────────────────────────
 
-@keras.saving.register_keras_serializable(package="quant")
+@_register(package="quant")
 class DQNModel(tf.keras.Model):
     def __init__(self, state_size: int, action_size: int, **kwargs):
         super().__init__(**kwargs)
