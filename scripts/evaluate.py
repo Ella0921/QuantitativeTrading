@@ -23,7 +23,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from src.data.downloader import download, get_train_test_split
+from src.data.downloader import download
 from src.features.indicators import add_all, to_macd_series
 from src.models.dqn_agent import DQNAgent
 from src.backtest.engine import BacktestEngine

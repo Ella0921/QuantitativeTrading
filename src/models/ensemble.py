@@ -13,9 +13,6 @@ combining signals rather than treating each model in isolation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
-
-import numpy as np
 import pandas as pd
 
 from src.models.dqn_agent import DQNAgent

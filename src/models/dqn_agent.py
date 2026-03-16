@@ -27,14 +27,25 @@ from src.features.indicators import to_macd_series
 # ── Neural network ──────────────────────────────────────────────────────────
 
 class DQNModel(tf.keras.Model):
-    def __init__(self, state_size: int, action_size: int):
-        super().__init__()
+    def __init__(self, state_size: int, action_size: int, **kwargs):
+        super().__init__(**kwargs)
+        self.state_size = state_size
+        self.action_size = action_size
         self.d1 = tf.keras.layers.Dense(256, activation="relu")
         self.d2 = tf.keras.layers.Dense(128, activation="relu")
         self.out = tf.keras.layers.Dense(action_size)
 
     def call(self, x, training=False):
         return self.out(self.d2(self.d1(x)))
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({"state_size": self.state_size, "action_size": self.action_size})
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 
 # ── Agent ────────────────────────────────────────────────────────────────────
