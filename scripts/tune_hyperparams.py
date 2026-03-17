@@ -110,6 +110,8 @@ def parse_args():
 
 def main():
     args = parse_args()
+    from src.utils.device import configure_gpu
+    configure_gpu()
 
     # Data
     print(f"Downloading {args.ticker}...")

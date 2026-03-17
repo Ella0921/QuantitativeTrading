@@ -34,7 +34,7 @@ def get_model_sharpe(stage: str, client, ticker: str) -> tuple[float, str]:
     Returns (sharpe, version).
     """
     import mlflow.tensorflow
-    from src.data.downloader import download, get_train_test_split
+    from src.data.downloader import download
     from src.features.indicators import add_all, to_macd_series
     from src.models.dqn_agent import DQNAgent
     from src.backtest.engine import BacktestEngine

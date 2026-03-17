@@ -12,7 +12,6 @@ This makes them drop-in replacements in BacktestEngine.run().
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 

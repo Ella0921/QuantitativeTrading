@@ -1,4 +1,6 @@
 tensorflow>=2.13.0
+# Windows GPU: install this after tensorflow for DirectML support
+# pip install tensorflow-directml-plugin
 numpy>=1.24.0
 pandas>=2.0.0
 yfinance>=0.2.36

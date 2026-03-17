@@ -169,6 +169,8 @@ def run_cnn(args, df_train: pd.DataFrame, df_test: pd.DataFrame):
 
 def main():
     args = parse_args()
+    from src.utils.device import configure_gpu
+    configure_gpu()
 
     # Setup MLflow — use SQLite backend to avoid FileStore deprecation warning
     uri = args.mlflow_uri

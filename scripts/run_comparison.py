@@ -24,7 +24,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import matplotlib
 matplotlib.use("Agg")  # headless — no display needed
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
 
@@ -36,7 +35,6 @@ from src.baselines.strategies import (
     sma_crossover_signals,
     macd_rsi_signals,
     rsi_mean_reversion_signals,
-    BASELINE_NAMES,
 )
 from src.baselines.lstm_model import LSTMAgent
 from src.backtest.engine import BacktestEngine
@@ -205,7 +203,6 @@ def plot_metrics_bar(
     mdds    = [abs(results[n]["max_drawdown_pct"]) for n in names]
 
     x   = np.arange(len(names))
-    w   = 0.26
     bar_colors = [COLORS.get(n, "#888") for n in names]
 
     fig, axes = plt.subplots(1, 3, figsize=(14, 5))
@@ -292,6 +289,8 @@ def parse_args():
 
 def main():
     args = parse_args()
+    from src.utils.device import configure_gpu
+    configure_gpu()
 
     results, portfolios, prices, dates, capital = run_all(
         ticker=args.ticker,
