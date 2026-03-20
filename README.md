@@ -56,12 +56,38 @@ Total return is gameable (a model that holds all-in during a bull run beats ever
 python scripts/run_comparison.py
 ```
 
-| Rank | Strategy | Return % | Sharpe | Max DD % | Win Rate % |
-|------|----------|:--------:|:------:|:--------:|:----------:|
-| — | *Run comparison script to populate* | | | | |
+Results on `^TWII` (Taiwan Weighted Index), trained 2016–2022, tested 2023–2024:
+
+| Rank | Strategy | Return % | Sharpe | Max DD % | Win Rate % | Trades |
+|------|----------|:--------:|:------:|:--------:|:----------:|:------:|
+| 1 | LSTM Baseline | +8.76% | 1.748 | -1.79% | 70.0% | 10 |
+| 2 | RSI Mean Reversion | +4.00% | 1.596 | -1.09% | 100.0% | 7 |
+| 3 | Buy & Hold | +12.52% | 1.408 | -5.59% | 100.0% | 1 |
+| 4 | MACD + RSI Rules | +1.60% | 0.786 | -1.27% | 47.1% | 17 |
+| 5 | SMA Crossover (5/20) | +3.02% | 0.711 | -3.64% | 35.7% | 14 |
+| **6** | **DQN Agent (ours)** | **+3.43%** | **0.504** | **-4.33%** | **58.0%** | **176** |
 
 ![Equity curves](results/equity_curves.png)
 ![Metrics comparison](results/metrics_bar.png)
+
+### Why DQN underperforms — and what this tells us
+
+The DQN agent ranked last by Sharpe ratio. This is an honest result worth examining because it directly motivates the engineering decisions in the rest of the pipeline.
+
+**Root cause: overtrading.** The DQN made 176 trades in 480 test days — roughly one trade every 2.7 days. Compare this to RSI Mean Reversion (7 trades) or Buy & Hold (1 trade). Each trade incurs transaction cost, and in a low-volatility trending market like TWII 2023–2024, frequent position changes destroy returns. High win rate (58%) but low Sharpe confirms the signal quality is reasonable — the problem is signal frequency.
+
+**Why does the model overtrade?** The DQN's action space includes 9 buy sizes and 9 sell sizes. With a relatively short training run (200 epochs on CPU), the agent hasn't converged to a conservative policy — it still fires on weak signals. This is a known failure mode of DQN in financial environments.
+
+**What the pipeline is designed to fix:**
+
+| Problem | Pipeline solution | Component |
+|---------|------------------|-----------|
+| Overtrading | CNN regime filter suppresses signals in sideways markets | `src/models/ensemble.py` |
+| Suboptimal hyperparameters | Optuna search over window size, LR, stop-loss | `scripts/tune_hyperparams.py` |
+| Stale model | Weekly drift-triggered retrain | `dags/retrain_pipeline.py` |
+| Underfitting (200 epochs) | MLflow registry only promotes if Sharpe improves | `scripts/promote_model.py` |
+
+**The engineering takeaway:** a model that underperforms out-of-the-box is exactly why you need a robust MLOps pipeline — automated retraining, drift detection, and gated promotion ensure the system self-corrects over time rather than silently degrading.
 
 ---
 
