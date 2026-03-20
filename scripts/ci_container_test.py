@@ -6,7 +6,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import numpy as np
 from src.backtest.engine import BacktestEngine
 from src.features.indicators import to_macd_series
-from src.monitoring.data_quality import validate_raw_data
 
 prices = (100 + np.cumsum(np.random.randn(50))).tolist()
 macd   = to_macd_series(prices)

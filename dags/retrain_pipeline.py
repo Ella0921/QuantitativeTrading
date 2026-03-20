@@ -206,10 +206,6 @@ def task_promote_if_better(**context) -> dict:
     Archives the old Production model as Archived (keeps audit trail).
     """
     import mlflow
-    from src.data.downloader import download, get_train_test_split
-    from src.features.indicators import add_all, to_macd_series
-    from src.models.dqn_agent import DQNAgent
-    from src.backtest.engine import BacktestEngine
 
     candidate_metrics = context["task_instance"].xcom_pull(task_ids="evaluate_candidate")
     candidate_sharpe  = candidate_metrics["sharpe_ratio"]
