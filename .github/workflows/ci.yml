@@ -7,7 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  # ── 1. Unit tests + coverage ──────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
     steps:
@@ -26,7 +25,6 @@ jobs:
           file: coverage.xml
           fail_ci_if_error: false
 
-  # ── 2. Lint ───────────────────────────────────────────────────────────────
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +35,6 @@ jobs:
       - run: pip install ruff
       - run: ruff check src/ api/ scripts/ tests/ dags/
 
-  # ── 3. Pipeline smoke test ────────────────────────────────────────────────
   smoke:
     runs-on: ubuntu-latest
     needs: test
@@ -51,43 +48,13 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
       - run: pip install -r requirements.txt
-      - name: Validate data quality module
-        run: python -c "
-from src.monitoring.data_quality import validate_raw_data
-from src.monitoring.drift import compute_psi
-import pandas as pd, numpy as np
-dates = pd.date_range('2020-01-01', periods=300, freq='B')
-close = np.abs(100 + np.cumsum(np.random.randn(300)))
-df = pd.DataFrame({'Open': close, 'High': close*1.01, 'Low': close*0.99,
-                   'Close': close, 'Volume': np.ones(300)*1e6}, index=dates)
-r = validate_raw_data(df, 'TEST')
-assert r['passed'], f'Quality check failed: {r[\"failed\"]}'
-psi = compute_psi(close[:150], close[150:])
-assert psi >= 0
-print('Smoke test passed')
-"
-      - name: Validate DAG imports
-        run: python -c "
-import sys; sys.path.insert(0, '.')
-from dags.stock_pipeline import task_download_raw, task_validate_quality, task_compute_features
-from dags.retrain_pipeline import task_should_retrain
-print('DAG imports OK')
-"
+      - run: python scripts/ci_smoke_test.py
 
-  # ── 4. Docker build ───────────────────────────────────────────────────────
   docker:
     runs-on: ubuntu-latest
     needs: [test, lint]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - name: Build image
-        run: docker build -t quant-pipeline:latest .
-      - name: Container smoke test
-        run: |
-          docker run --rm quant-pipeline:latest python -c "
-from src.backtest.engine import BacktestEngine
-from src.features.indicators import to_macd_series
-from src.monitoring.data_quality import validate_raw_data
-print('Container smoke test passed')
-"
+      - run: docker build -t quant-pipeline:latest .
+      - run: docker run --rm quant-pipeline:latest python scripts/ci_container_test.py
