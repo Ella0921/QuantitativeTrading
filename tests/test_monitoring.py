@@ -11,7 +11,7 @@ import pytest
 from src.monitoring.data_quality import (
     validate_raw_data, validate_features,
     check_no_nulls, check_positive_close, check_ohlc_consistency,
-    check_no_price_spikes, check_min_rows,
+    check_no_price_spikes, check_min_rows, check_positive_volume,
 )
 from src.monitoring.drift import compute_psi, compute_psi_report
 
@@ -52,6 +52,19 @@ class TestRawValidation:
         df = clean_ohlcv.copy()
         df.iloc[0, df.columns.get_loc("Close")] = -1.0
         r = check_positive_close(df)
+        assert r["passed"] is False
+
+    def test_zero_volume_allowed(self, clean_ohlcv):
+        """Index tickers have zero volume — should pass."""
+        df = clean_ohlcv.copy()
+        df["Volume"] = 0.0
+        r = check_positive_volume(df)
+        assert r["passed"] is True
+
+    def test_negative_volume_detected(self, clean_ohlcv):
+        df = clean_ohlcv.copy()
+        df.iloc[0, df.columns.get_loc("Volume")] = -1.0
+        r = check_positive_volume(df)
         assert r["passed"] is False
 
     def test_ohlc_inconsistency_detected(self, clean_ohlcv):

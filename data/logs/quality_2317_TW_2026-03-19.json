@@ -1,0 +1,52 @@
+{
+  "ticker": "2317.TW",
+  "timestamp": "2026-03-20T10:10:08.254618",
+  "passed": false,
+  "n_checks": 8,
+  "n_failed": 1,
+  "failed": [
+    "volume_positive"
+  ],
+  "checks": [
+    {
+      "name": "no_null_values",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "close_positive",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "volume_positive",
+      "passed": false,
+      "detail": "1 non-positive Volume values"
+    },
+    {
+      "name": "dates_monotonic",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "no_duplicate_dates",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "min_200_rows",
+      "passed": true,
+      "detail": "483 rows ok"
+    },
+    {
+      "name": "ohlc_consistency",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "no_spikes_over_30pct",
+      "passed": true,
+      "detail": "ok"
+    }
+  ]
+}

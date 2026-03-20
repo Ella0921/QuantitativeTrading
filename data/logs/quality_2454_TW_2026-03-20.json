@@ -1,0 +1,50 @@
+{
+  "ticker": "2454.TW",
+  "timestamp": "2026-03-20T19:58:53.812400",
+  "passed": true,
+  "n_checks": 8,
+  "n_failed": 0,
+  "failed": [],
+  "checks": [
+    {
+      "name": "no_null_values",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "close_positive",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "volume_positive",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "dates_monotonic",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "no_duplicate_dates",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "min_200_rows",
+      "passed": true,
+      "detail": "483 rows ok"
+    },
+    {
+      "name": "ohlc_consistency",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "no_spikes_over_30pct",
+      "passed": true,
+      "detail": "ok"
+    }
+  ]
+}

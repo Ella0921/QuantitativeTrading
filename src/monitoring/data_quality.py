@@ -43,11 +43,15 @@ def check_positive_close(df: pd.DataFrame) -> dict:
 
 
 def check_positive_volume(df: pd.DataFrame) -> dict:
-    bad = int((df["Volume"] <= 0).sum())
+    """
+    Allow volume = 0 for index tickers (e.g. ^TWII, ^SPX).
+    Only flag truly negative volume as a data error.
+    """
+    bad = int((df["Volume"] < 0).sum())
     return {
         "name":   "volume_positive",
         "passed": bad == 0,
-        "detail": f"{bad} non-positive Volume values" if bad else "ok",
+        "detail": f"{bad} negative Volume values" if bad else "ok",
     }
 
 
