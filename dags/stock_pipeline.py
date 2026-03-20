@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.data.downloader import download
 from src.features.indicators import add_all
-from src.monitoring.data_quality import validate_raw_data, validate_features
+from src.monitoring.data_quality import validate_raw_data
 
 TICKERS    = ["^TWII", "2330.TW", "2317.TW", "2454.TW"]
 RAW_DIR    = Path("data/raw")

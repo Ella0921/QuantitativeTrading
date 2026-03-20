@@ -57,7 +57,7 @@ def task_should_retrain(**context) -> bool:
     from datetime import datetime
 
     log_dir = Path("data/logs")
-    drift_logs = sorted(glob.glob(str(log_dir / f"drift_TWII_*.json")))
+    drift_logs = sorted(glob.glob(str(log_dir / "drift_TWII_*.json")))
 
     if drift_logs:
         latest_log = json.load(open(drift_logs[-1]))
@@ -155,8 +155,7 @@ def task_evaluate_candidate(**context) -> dict:
     Logs metrics back to MLflow and returns the metrics dict.
     """
     import mlflow
-    import pandas as pd
-
+    import mlflow.tensorflow
     from src.data.downloader import download, get_train_test_split
     from src.features.indicators import add_all, to_macd_series
     from src.models.dqn_agent import DQNAgent
@@ -176,8 +175,7 @@ def task_evaluate_candidate(**context) -> dict:
     if not versions:
         raise RuntimeError("No Staging model found")
 
-    model_uri = f"models:/dqn_agent/Staging"
-    import mlflow.tensorflow
+    model_uri = "models:/dqn_agent/Staging"
     tf_model = mlflow.tensorflow.load_model(model_uri)
 
     agent = DQNAgent()
@@ -231,7 +229,7 @@ def task_promote_if_better(**context) -> dict:
               f"Gap: {gap:+.4f}  Threshold: {PROMOTION_SHARPE_THRESHOLD}")
 
         if gap < PROMOTION_SHARPE_THRESHOLD:
-            print(f"[promote] Not promoting — improvement below threshold")
+            print("[promote] Not promoting — improvement below threshold")
             return {"promoted": False, "reason": "below_threshold",
                     "candidate_sharpe": candidate_sharpe, "prod_sharpe": prod_sharpe}
 
