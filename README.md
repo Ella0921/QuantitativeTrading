@@ -1,176 +1,167 @@
-# Quantitative Trading ML Pipeline
+# Stock Price ML Pipeline
 
 ![CI](https://github.com/Ella0921/QuantitativeTrading/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange)
-![Airflow](https://img.shields.io/badge/Airflow-DAG-017CEE)
-![MLflow](https://img.shields.io/badge/MLflow-registry-0194E2)
+![Airflow](https://img.shields.io/badge/Airflow-2.9-017CEE)
+![MLflow](https://img.shields.io/badge/MLflow-2.13-0194E2)
+![Coverage](https://codecov.io/gh/Ella0921/QuantitativeTrading/branch/main/graph/badge.svg)
 
-An end-to-end ML pipeline for quantitative trading signals, built to demonstrate **Data Engineering** and **MLOps** practices. Algorithmic trading is used as the domain — the engineering patterns are transferable to any ML system.
+An end-to-end MLOps pipeline using stock price prediction as the domain.  
+The engineering patterns demonstrated here — orchestrated ingestion, versioned feature store, automated model promotion, drift monitoring — are domain-agnostic and apply to any production ML system.
 
 ---
 
-## Pipeline architecture
+## Pipeline overview
 
 ```
-L1  Ingestion        yfinance → raw Parquet → 8-check quality validation
-         ↓           Airflow DAG: daily schedule, retry logic, task dependencies
-L2  Feature Store    MACD / RSI / Bollinger Bands / ATR → versioned Parquet
-         ↓           Schema validation, train/serve skew prevention
-L3  Training         DQN Agent (TF2 Keras) + Optuna hyperparameter search
-         ↓           MLflow experiment tracking → Model Registry (Staging)
-L4  Promotion        Auto-promote Staging → Production if Sharpe ratio improves
-         ↓           PSI drift monitoring triggers weekly retrain DAG
-L5  Serving          FastAPI inference endpoint + Docker
-         ↓           Prometheus metrics, request logging
+┌─────────────────────────────────────────────────────────────┐
+│  L1  Ingestion          (Airflow DAG, daily @ 18:00 TPE)    │
+│      yfinance → 8-check quality gate → data/raw/            │
+├─────────────────────────────────────────────────────────────┤
+│  L2  Feature Store      (versioned by execution date)        │
+│      MACD / RSI / BB / ATR → data/features/{ticker}/{date}/ │
+├─────────────────────────────────────────────────────────────┤
+│  L3  Training Pipeline  (MLflow experiment tracking)         │
+│      DQN Agent + Optuna search → MLflow Model Registry       │
+├─────────────────────────────────────────────────────────────┤
+│  L4  Model Promotion    (automated, Sharpe-gated)            │
+│      Staging → Production if ΔSharpe ≥ 0.05                 │
+├─────────────────────────────────────────────────────────────┤
+│  L5  Monitoring         (weekly drift check)                 │
+│      PSI per feature → retrain trigger if PSI ≥ 0.10        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## DE talking points
+## Design decisions
 
-**Airflow DAG design** (`dags/stock_pipeline.py`)
-- Four task chain per ticker: `download_raw → validate_quality → compute_features → check_drift`
-- Catchup disabled, 2 retries with 5-minute delay — production-ready defaults
-- `ShortCircuitOperator` in retrain DAG skips downstream tasks if drift PSI < 0.1
-- Local execution mode: `python dags/stock_pipeline.py --run-local --ticker ^TWII`
+### Why Airflow over cron?
+Task-level dependency management, retry logic, backfill capability, and a UI for monitoring failures. The `stock_pipeline` DAG chains four tasks per ticker — if `validate_quality` fails, `compute_features` never runs, preventing bad data from entering the feature store.
 
-**Data quality layer** (`src/monitoring/data_quality.py`)
-- 8 checks on raw data: nulls, positive prices, OHLC consistency, monotonic dates, no spikes
-- 4 checks on features: all columns present, no nulls, RSI in [0,100], BB ordering
-- Pipeline fails fast on any violation — bad data never reaches the feature store
-- Logs validation results to `data/logs/` for audit trail
+### Why versioned feature store instead of recomputing on-the-fly?
+Reproducibility: any training run can be pinned to a specific feature version. Prevents train/serve skew: serving reads from the same Parquet schema as training. Enables rollback: if a bad feature version causes model degradation, revert to the previous date's features.
 
-**Feature store** (`src/features/`, `data/features/`)
-- Versioned by execution date: `data/features/TWII/2024-01-15.parquet`
-- `latest.parquet` pointer for serving — decouples training from inference
-- Prevents train/serve skew: serving reads from same Parquet schema as training
+### Why PSI for drift detection?
+PSI (Population Stability Index) is the industry standard in financial ML. Unlike statistical tests (KS, chi-squared), PSI gives an interpretable magnitude — 0.1 = monitor, 0.2 = retrain. It runs weekly as the last task in the ingestion DAG and sets a flag that the retrain DAG reads.
 
-**PSI drift monitoring** (`src/monitoring/drift.py`)
-- Computes Population Stability Index per feature, weekly
-- PSI < 0.10 = stable | 0.10–0.20 = moderate | ≥ 0.20 = retrain triggered
-- Output: `data/logs/drift_{ticker}_{date}.json`
-
----
-
-## MLE talking points
-
-**MLflow experiment tracking** (`scripts/train_mlflow.py`)
-- Logs hyperparameters, per-epoch loss, backtest metrics per run
-- Model artifacts stored in registry with stage transitions: None → Staging → Production → Archived
-- SQLite backend: `sqlite:///mlruns.db` — no server needed locally
-
-**Automated model promotion** (`scripts/promote_model.py`)
-- Compares Staging vs Production on held-out test set (2023–2024)
-- Promotes only if Sharpe ratio improvement ≥ 0.05 (configurable threshold)
-- Archives old Production model — full audit trail, no silent overwrites
-- `--dry-run` flag for safe previewing
-
-**Hyperparameter search** (`scripts/tune_hyperparams.py`)
-- Optuna TPE sampler, MedianPruner for early stopping
-- Search space: learning rate, window size, use_macd, iterations, stop_loss, position size
-- Objective: maximise out-of-sample Sharpe ratio
-- Results persisted to SQLite (`optuna_studies/`) — can resume interrupted searches
-
-**Retrain trigger logic** (`dags/retrain_pipeline.py`)
-- Retrain if: (a) feature drift PSI ≥ 0.1, OR (b) no training in past 7 days
-- Prevents unnecessary retrains when model is still performant
+### Why Sharpe ratio as the promotion criterion?
+Total return is gameable (a model that holds all-in during a bull run beats everything). Sharpe normalises for volatility — a model with Sharpe 1.2 and 15% return is better than one with Sharpe 0.4 and 30% return. The 0.05 threshold prevents noise-driven promotions.
 
 ---
 
 ## Model performance vs baselines
 
-Run `python scripts/run_comparison.py` to reproduce:
+```bash
+python scripts/run_comparison.py
+```
 
 | Rank | Strategy | Return % | Sharpe | Max DD % | Win Rate % |
 |------|----------|:--------:|:------:|:--------:|:----------:|
-| — | *Results generated after running comparison script* | | | | |
+| — | *Run comparison script to populate* | | | | |
 
 ![Equity curves](results/equity_curves.png)
+![Metrics comparison](results/metrics_bar.png)
 
 ---
 
-## Project structure
+## Repository structure
 
 ```
 dags/
-├── stock_pipeline.py      # L1-L2: daily ingestion + feature DAG
-└── retrain_pipeline.py    # L3-L4: weekly retrain + promotion DAG
+├── stock_pipeline.py       # L1-L2: daily ingestion → quality → features → drift
+└── retrain_pipeline.py     # L3-L4: weekly retrain → evaluate → promote
 
 src/
-├── data/downloader.py     # yfinance fetch + Parquet cache
-├── features/indicators.py # MACD, RSI, Bollinger Bands, ATR
+├── data/
+│   └── downloader.py       # yfinance fetch + Parquet cache
+├── features/
+│   └── indicators.py       # MACD, RSI, Bollinger Bands, ATR
 ├── models/
-│   ├── dqn_agent.py       # Deep Q-Network (TF2 Keras)
-│   ├── cnn_agent.py       # CNN Q-Network
-│   └── ensemble.py        # Signal fusion
+│   ├── dqn_agent.py        # Deep Q-Network (TF2 Keras, serializable)
+│   └── cnn_agent.py        # CNN Q-Network
 ├── baselines/
-│   ├── strategies.py      # SMA, MACD/RSI, RSI rules
-│   └── lstm_model.py      # LSTM baseline
-├── backtest/engine.py     # Sharpe, MDD, Win rate, Calmar
-└── monitoring/
-    ├── data_quality.py    # 8-check raw validation + feature validation
-    └── drift.py           # PSI feature drift computation
+│   ├── strategies.py       # Buy&Hold, SMA crossover, MACD/RSI, RSI rules
+│   └── lstm_model.py       # LSTM baseline for comparison
+├── backtest/
+│   └── engine.py           # Sharpe, MDD, Win rate, Calmar + stop-loss
+├── monitoring/
+│   ├── data_quality.py     # 8 raw checks + 4 feature checks
+│   └── drift.py            # PSI computation + feature drift report
+└── utils/
+    └── device.py           # Cross-platform GPU configuration
 
 scripts/
-├── run_comparison.py      # Baseline comparison → results/
-├── train_mlflow.py        # Train + MLflow logging
-├── promote_model.py       # Staging → Production promotion
-├── tune_hyperparams.py    # Optuna search
-└── evaluate.py            # Single model evaluation
+├── train_mlflow.py         # Train DQN + log to MLflow
+├── tune_hyperparams.py     # Optuna hyperparameter search
+├── promote_model.py        # Compare Staging vs Production, promote if better
+├── run_comparison.py       # Baseline comparison → results/
+└── evaluate.py             # Single model evaluation + HTML chart
 
-tests/                     # 53 pytest tests, 72% coverage
-.github/workflows/ci.yml   # pytest + ruff + docker build
+api/
+└── main.py                 # FastAPI inference endpoint (optional serving layer)
+
+tests/                      # 65+ pytest tests
+.github/workflows/
+├── ci.yml                  # test + lint + pipeline smoke test + docker build
+└── comparison.yml          # weekly baseline comparison (scheduled)
 ```
 
 ---
 
-## Quick start
+## Local setup
 
 ```bash
+# Install dependencies
 pip install -r requirements.txt
+# Windows GPU (optional):
+pip install tensorflow-directml-plugin
 
-# Run daily pipeline locally (no Airflow needed)
+# Run the full daily pipeline locally (no Airflow needed)
 python dags/stock_pipeline.py --run-local --ticker ^TWII
 
 # Train a model
 python scripts/train_mlflow.py --ticker ^TWII --model dqn --use-macd
 
+# View experiments
+mlflow ui --backend-store-uri sqlite:///mlruns.db
+# → http://localhost:5000
+
 # Check if new model should be promoted
 python scripts/promote_model.py --dry-run
 
-# Run baseline comparison
+# Run baseline comparison (generates results/ images for README)
 python scripts/run_comparison.py
 
-# View MLflow experiments
-mlflow ui --backend-store-uri sqlite:///mlruns.db
-
-# All services (Airflow + MLflow + API)
-docker-compose up
-
-# Tests
+# Run tests
 pytest tests/ -v --cov=src
 ```
 
----
+## Docker (full MLOps stack)
 
-## Stack
+```bash
+docker-compose up
 
-| Layer | Tool | Purpose |
-|-------|------|---------|
-| Orchestration | Apache Airflow 2 | DAG scheduling, retry, task deps |
-| Data storage | Parquet (pyarrow) | Columnar, versioned feature store |
-| Quality | Custom validation suite | 8 raw checks + 4 feature checks |
-| Drift monitoring | PSI (custom) | Weekly feature distribution checks |
-| Experiment tracking | MLflow | Params, metrics, model registry |
-| Hyperparameter search | Optuna | TPE + MedianPruner |
-| Models | TensorFlow 2 / Keras 3 | DQN, CNN Q-Network |
-| Backtest | Custom engine | Sharpe, MDD, Win rate, Calmar |
-| API | FastAPI + Pydantic | REST inference, health check |
-| Testing | pytest | 53 tests, 72%+ coverage |
-| CI/CD | GitHub Actions | test + lint + Docker build |
-| Containerisation | Docker + compose | One-command local deployment |
+# Airflow UI  → http://localhost:8080  (admin / admin)
+# MLflow UI   → http://localhost:5000
+```
+
+The compose stack runs: Postgres (metadata + MLflow backend) → MLflow server → Airflow (webserver + scheduler). DAGs are volume-mounted so changes are picked up without rebuilding.
 
 ---
 
-*Originally a 4-person group project (2023). Rebuilt solo to demonstrate DE/MLE pipeline engineering.*
+## Key engineering patterns
+
+| Pattern | Implementation | File |
+|---------|---------------|------|
+| DAG with fail-fast quality gate | `validate_quality` blocks `compute_features` | `dags/stock_pipeline.py` |
+| Versioned feature store | Date-stamped Parquet + `latest.parquet` pointer | `dags/stock_pipeline.py` |
+| Drift-triggered retraining | `ShortCircuitOperator` reads PSI log | `dags/retrain_pipeline.py` |
+| Guarded model promotion | ΔSharpe ≥ 0.05, old model → Archived | `scripts/promote_model.py` |
+| Reproducible experiments | MLflow params + metrics + artifact per run | `scripts/train_mlflow.py` |
+| Cross-platform GPU | try DirectML → CUDA → CPU fallback | `src/utils/device.py` |
+| CI pipeline smoke test | Validates DAG imports + quality module | `.github/workflows/ci.yml` |
+
+---
+
+*Originally a 4-person group project (2023). Rebuilt to demonstrate DE/MLE pipeline engineering.*

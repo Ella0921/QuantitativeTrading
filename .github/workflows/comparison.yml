@@ -1,63 +1,31 @@
-name: Baseline Comparison
+name: Weekly baseline comparison
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "src/models/**"
-      - "src/baselines/**"
-      - "src/backtest/**"
-      - "scripts/run_comparison.py"
-  workflow_dispatch:          # allow manual trigger from GitHub UI
   schedule:
-    - cron: "0 2 * * 0"       # re-run every Sunday 02:00 UTC (weekly refresh)
+    - cron: "0 2 * * 0"   # Sunday 02:00 UTC
+  workflow_dispatch:        # allow manual trigger
 
 jobs:
   compare:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write         # needed to commit results back to repo
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Cache pip
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-comparison-${{ hashFiles('requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install matplotlib
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+      - run: pip install -r requirements.txt
 
       - name: Run baseline comparison
-        run: |
-          python scripts/run_comparison.py \
-            --ticker ^TWII \
-            --train-start 2016-01-01 \
-            --train-end   2022-12-31 \
-            --test-start  2023-01-01 \
-            --test-end    2024-12-31 \
-            --dqn-iters   200 \
-            --lstm-epochs 30
-        env:
-          PYTHONUNBUFFERED: "1"
+        run: python scripts/run_comparison.py --dqn-iters 200 --lstm-epochs 20
 
       - name: Commit results
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add results/
-          git diff --staged --quiet && echo "No changes to commit" || \
-            git commit -m "ci: update baseline comparison results [skip ci]"
+          git diff --staged --quiet || git commit -m "ci: update baseline comparison results [skip ci]"
           git push

@@ -13,7 +13,6 @@ knowing how to handle cross-platform GPU setup shows practical experience.
 
 from __future__ import annotations
 
-import os
 import platform
 import sys
 
