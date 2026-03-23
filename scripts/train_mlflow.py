@@ -44,7 +44,7 @@ def parse_args():
     p.add_argument("--initial-money",default=1_000_000, type=float)
     p.add_argument("--stop-loss",    default=0.05, type=float)
     p.add_argument("--max-position", default=0.20, type=float)
-    p.add_argument("--mlflow-uri",   default="mlruns",       help="MLflow tracking URI")
+    p.add_argument("--mlflow-uri",   default=None,           help="MLflow tracking URI (default: $MLFLOW_TRACKING_URI or sqlite:///mlruns.db)")
     p.add_argument("--experiment",   default=None,           help="MLflow experiment name")
     return p.parse_args()
 
@@ -97,7 +97,9 @@ def run_dqn(args, df_train: pd.DataFrame, df_test: pd.DataFrame):
         # Save model
         save_path = f"models/dqn_{args.ticker.replace('^','').replace('.','_')}"
         agent.save(save_path)
-        mlflow.log_artifact(save_path, artifact_path="model")
+        # Model artifact logging skipped — model saved locally to models/
+        # MLflow metrics and params are tracked above
+        print(f"[mlflow] Model saved locally: {save_path}.keras")
 
         # Backtest on test set
         print(f"\n── Backtesting on {args.ticker} ({args.test_start} → {args.test_end}) ──")
@@ -118,9 +120,6 @@ def run_dqn(args, df_train: pd.DataFrame, df_test: pd.DataFrame):
             "num_buy_signals":  len(buys),
             "num_sell_signals": len(sells),
         })
-
-        # Log model with signature
-        mlflow.tensorflow.log_model(agent.model, artifact_path="tf_model")
 
         print("\n" + result.summary())
         print(f"Buy-and-hold baseline: {bnh:+.2f}%")
@@ -159,9 +158,6 @@ def run_cnn(args, df_train: pd.DataFrame, df_test: pd.DataFrame):
 
         save_path = f"models/cnn_{args.ticker.replace('^','').replace('.','_')}"
         agent.save(save_path)
-        mlflow.log_artifact(save_path, artifact_path="model")
-        mlflow.tensorflow.log_model(agent.model, artifact_path="tf_model")
-
         print(f"\nMLflow run ID: {mlflow.active_run().info.run_id}")
 
 
@@ -172,11 +168,13 @@ def main():
     from src.utils.device import configure_gpu
     configure_gpu()
 
-    # Setup MLflow — use SQLite backend to avoid FileStore deprecation warning
-    uri = args.mlflow_uri
+    # Setup MLflow — prefer MLFLOW_TRACKING_URI env var, then --mlflow-uri arg, then sqlite default
+    import os
+    uri = args.mlflow_uri or os.environ.get("MLFLOW_TRACKING_URI") or "sqlite:///mlruns.db"
     if not uri.startswith(("sqlite://", "postgresql://", "mysql://", "http://", "https://")):
         uri = f"sqlite:///{uri}.db"
     mlflow.set_tracking_uri(uri)
+    print(f"MLflow tracking URI: {uri}")
     exp_name = args.experiment or f"quant_{args.model}_{args.ticker.replace('^','').replace('.','_')}"
     mlflow.set_experiment(exp_name)
 
