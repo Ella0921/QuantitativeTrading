@@ -56,7 +56,7 @@ Bad data blocked])
     D --> F
 
     subgraph L2["L2 — Feature Store  (versioned Parquet)"]
-        F[Compute MACD / RSI / BB / ATR] --> G[data/features/{ticker}/{date}.parquet]
+        F[Compute MACD / RSI / BB / ATR] --> G[data/features/TICKER/DATE.parquet]
         G --> H{PSI Drift
 Check}
         H -->|PSI ≥ 0.1| I([⚠️ Retrain triggered])
