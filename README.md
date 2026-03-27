@@ -1,4 +1,4 @@
-# Stock Price ML Pipeline
+# DQN Trading Pipeline
 
 ![CI](https://github.com/Ella0921/QuantitativeTrading/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.11-blue)
