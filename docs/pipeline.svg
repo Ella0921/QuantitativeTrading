@@ -1,0 +1,79 @@
+<svg width="100%" viewBox="0 0 680 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- L1 Ingestion -->
+  <g class="c-blue">
+    <rect x="30" y="20" width="620" height="80" rx="10" stroke-width="0.5"/>
+    <text class="th" x="50" y="52" dominant-baseline="central">L1 — Ingestion</text>
+    <text class="ts" x="50" y="74" dominant-baseline="central">Airflow DAG · daily @ 18:00 TPE · yfinance → 8-check quality gate → data/raw/</text>
+    <text class="th" x="620" y="60" text-anchor="end" dominant-baseline="central">DE</text>
+  </g>
+
+  <!-- Arrow -->
+  <line x1="340" y1="100" x2="340" y2="128" class="arr" marker-end="url(#arrow)"/>
+  <text class="ts" x="355" y="118" dominant-baseline="central">pass</text>
+
+  <!-- fail branch -->
+  <line x1="200" y1="60" x2="90" y2="60" class="arr" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+  <g class="c-red">
+    <rect x="30" y="40" width="58" height="36" rx="6" stroke-width="0.5"/>
+    <text class="ts" x="59" y="58" text-anchor="middle" dominant-baseline="central">halted</text>
+  </g>
+
+  <!-- L2 Feature Store -->
+  <g class="c-teal">
+    <rect x="30" y="130" width="620" height="80" rx="10" stroke-width="0.5"/>
+    <text class="th" x="50" y="162" dominant-baseline="central">L2 — Feature Store</text>
+    <text class="ts" x="50" y="184" dominant-baseline="central">Versioned Parquet · MACD / RSI / BB / ATR → data/features/TICKER/DATE.parquet</text>
+    <text class="th" x="620" y="170" text-anchor="end" dominant-baseline="central">DE</text>
+  </g>
+
+  <!-- Arrow -->
+  <line x1="340" y1="210" x2="340" y2="238" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- L3 Training -->
+  <g class="c-purple">
+    <rect x="30" y="240" width="620" height="80" rx="10" stroke-width="0.5"/>
+    <text class="th" x="50" y="272" dominant-baseline="central">L3 — Training Pipeline</text>
+    <text class="ts" x="50" y="294" dominant-baseline="central">DQN Agent · lr=1e-4, window=30 · hyperparameter search · MLflow experiment tracking</text>
+    <text class="th" x="620" y="280" text-anchor="end" dominant-baseline="central">MLE</text>
+  </g>
+
+  <!-- Arrow -->
+  <line x1="340" y1="320" x2="340" y2="348" class="arr" marker-end="url(#arrow)"/>
+  <text class="ts" x="355" y="338" dominant-baseline="central">ΔSharpe ≥ 0.05</text>
+
+  <!-- stay branch -->
+  <line x1="530" y1="280" x2="620" y2="280" class="arr" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+  <g class="c-gray">
+    <rect x="592" y="260" width="58" height="36" rx="6" stroke-width="0.5"/>
+    <text class="ts" x="621" y="278" text-anchor="middle" dominant-baseline="central">keep</text>
+  </g>
+
+  <!-- L4 Promotion -->
+  <g class="c-amber">
+    <rect x="30" y="350" width="620" height="80" rx="10" stroke-width="0.5"/>
+    <text class="th" x="50" y="382" dominant-baseline="central">L4 — Model Promotion</text>
+    <text class="ts" x="50" y="404" dominant-baseline="central">Staging → Production · automated Sharpe-gated comparison · MLflow Registry</text>
+    <text class="th" x="620" y="390" text-anchor="end" dominant-baseline="central">MLE</text>
+  </g>
+
+  <!-- Arrow -->
+  <line x1="340" y1="430" x2="340" y2="458" class="arr" marker-end="url(#arrow)"/>
+
+  <!-- L5 Monitoring -->
+  <g class="c-coral">
+    <rect x="30" y="460" width="620" height="80" rx="10" stroke-width="0.5"/>
+    <text class="th" x="50" y="492" dominant-baseline="central">L5 — Drift Monitoring</text>
+    <text class="ts" x="50" y="514" dominant-baseline="central">Weekly PSI check per feature · PSI ≥ 0.1 triggers retrain · logs to data/logs/</text>
+    <text class="th" x="620" y="500" text-anchor="end" dominant-baseline="central">MLE</text>
+  </g>
+
+  <!-- Retrain feedback arrow -->
+  <path d="M 30 500 L 10 500 L 10 280 L 30 280" fill="none" class="arr" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+  <text class="ts" x="6" y="395" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 6 395)">retrain</text>
+</svg>

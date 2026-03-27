@@ -41,57 +41,7 @@ The same hyperparameters (`lr=1e-4, window=30, stop_loss=0.07`) were applied to 
 
 ## Pipeline architecture
 
-```mermaid
-flowchart TD
-    A([📦 yfinance API]) --> B
-
-    subgraph L1["L1 — Ingestion  (Airflow DAG, daily)"]
-        B[Download OHLCV] --> C{8-check
-Quality Gate}
-        C -->|pass| D[Save to data/raw/]
-        C -->|fail| E([🚫 Pipeline halted
-Bad data blocked])
-    end
-
-    D --> F
-
-    subgraph L2["L2 — Feature Store  (versioned Parquet)"]
-        F[Compute MACD / RSI / BB / ATR] --> G[data/features/TICKER/DATE.parquet]
-        G --> H{PSI Drift
-Check}
-        H -->|PSI ≥ 0.1| I([⚠️ Retrain triggered])
-        H -->|stable| J([✅ Features ready])
-    end
-
-    G --> K
-
-    subgraph L3["L3 — Training  (MLflow tracked)"]
-        K[DQN Agent training
-lr=1e-4, window=30] --> L[Hyperparameter search
-quick_tune.py]
-        L --> M[Log params + metrics
-to MLflow Registry → Staging]
-    end
-
-    M --> N
-
-    subgraph L4["L4 — Promotion  (Sharpe-gated)"]
-        N{ΔSharpe ≥ 0.05?}
-        N -->|yes| O([🚀 Staging → Production])
-        N -->|no| P([⏸ Keep current Production])
-    end
-
-    subgraph L5["L5 — Monitoring  (weekly)"]
-        I --> K
-        Q[PSI per feature] --> H
-    end
-
-    style L1 fill:#1a3a5c,color:#fff,stroke:#4a9eff
-    style L2 fill:#1a4a3a,color:#fff,stroke:#4aff9e
-    style L3 fill:#4a3a1a,color:#fff,stroke:#ffb84a
-    style L4 fill:#3a1a4a,color:#fff,stroke:#c84aff
-    style L5 fill:#3a1a1a,color:#fff,stroke:#ff4a4a
-```
+![Pipeline architecture](docs/pipeline.svg)
 
 ![Airflow DAG](docs/airflow_dag.png)
 
