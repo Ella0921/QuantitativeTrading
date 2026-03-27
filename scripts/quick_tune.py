@@ -91,6 +91,6 @@ for rank, (idx, lr, w, sl, mp, sharpe, ret, trades) in enumerate(results, 1):
 best = results[0]
 print(f"\nBest: combo_{best[0]}  lr={best[1]:.0e}  window={best[2]}  "
       f"stop_loss={best[3]}  max_pos={best[4]}")
-print(f"\nNext step: retrain with best params + 200 epochs:")
-print(f"  python scripts/train_mlflow.py --ticker ^TWII --model dqn --use-macd \\")
+print("\nNext step: retrain with best params + 200 epochs:")
+print("  python scripts/train_mlflow.py --ticker ^TWII --model dqn --use-macd \\")
 print(f"    --learning-rate {best[1]} --window {best[2]} --iterations 200")
