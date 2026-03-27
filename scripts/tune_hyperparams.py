@@ -44,12 +44,12 @@ def make_objective(df_train, df_test, initial_money: float):
 
     def objective(trial: optuna.Trial) -> float:
         # ── Hyperparameter search space ──────────────────────────────────
-        lr          = trial.suggest_float("learning_rate", 1e-6, 1e-3, log=True)
-        window      = trial.suggest_int("window_size", 10, 60, step=5)
+        lr          = trial.suggest_float("learning_rate", 1e-5, 5e-4, log=True)
+        window      = trial.suggest_int("window_size", 10, 40, step=10)
         use_macd    = trial.suggest_categorical("use_macd", [True, False])
-        iterations  = trial.suggest_int("iterations", 100, 400, step=50)
-        stop_loss   = trial.suggest_float("stop_loss_pct", 0.02, 0.15, step=0.01)
-        max_pos     = trial.suggest_float("max_position_pct", 0.05, 0.40, step=0.05)
+        iterations  = 80   # fixed for speed — retrain with more epochs after finding best params
+        stop_loss   = trial.suggest_float("stop_loss_pct", 0.03, 0.10, step=0.01)
+        max_pos     = trial.suggest_float("max_position_pct", 0.10, 0.30, step=0.10)
 
         macd_train  = to_macd_series(prices_train) if use_macd else None
         macd_test   = to_macd_series(prices_test)  if use_macd else None
