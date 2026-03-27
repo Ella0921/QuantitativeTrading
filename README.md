@@ -177,4 +177,4 @@ docker-compose up
 
 ---
 
-*Originally a 4-person group project (2023). Rebuilt solo to demonstrate DE/MLE pipeline engineering.*
+*Originally a 6-person group project (2023). Rebuilt solo to demonstrate DE/MLE pipeline engineering.*
